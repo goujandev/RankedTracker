@@ -42,12 +42,12 @@ export function SearchForm() {
           value={riotId}
           onChange={(e) => setRiotId(e.target.value)}
           placeholder="Name#Tag"
-          className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-red-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          className="flex-1 rounded border border-border bg-surface px-4 py-2.5 text-base text-fg placeholder:text-fg-subtle outline-none transition-colors focus:border-accent"
         />
         <select
           value={affinity}
           onChange={(e) => setAffinity(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 focus:border-red-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          className="rounded border border-border bg-surface px-3 py-2.5 text-base text-fg outline-none transition-colors focus:border-accent"
         >
           {AFFINITIES.map((a) => (
             <option key={a.value} value={a.value}>
@@ -58,11 +58,11 @@ export function SearchForm() {
       </div>
       <button
         type="submit"
-        className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-base font-medium text-white transition-colors hover:bg-red-700"
+        className="w-full rounded bg-accent px-4 py-2.5 text-base font-semibold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover"
       >
         Search
       </button>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-negative">{error}</p>}
     </form>
   );
 }

@@ -7,6 +7,7 @@ import {
   MatchSummary,
   ValorantApiError,
 } from "./types";
+import { computeAggregateStats } from "./stats";
 
 const BASE_URL = "https://api.henrikdev.xyz";
 
@@ -64,7 +65,15 @@ interface HenrikMatchesResponse {
       puuid: string;
       team_id: string;
       agent: { name: string } | null;
-      stats: { kills: number; deaths: number; assists: number };
+      stats: {
+        kills: number;
+        deaths: number;
+        assists: number;
+        headshots: number;
+        bodyshots: number;
+        legshots: number;
+        damage: { dealt: number; received: number };
+      };
     }>;
     teams: Array<{ team_id: string; won: boolean; rounds: { won: number; lost: number } }>;
   }>;
@@ -139,10 +148,15 @@ export class HenrikDevProvider implements ValorantDataProvider {
         startedAt: match.metadata.started_at,
         won: myTeam ? myTeam.won : null,
         score: myTeam ? `${myTeam.rounds.won}-${myTeam.rounds.lost}` : null,
+        roundsPlayed: myTeam ? myTeam.rounds.won + myTeam.rounds.lost : null,
         agent: me?.agent?.name ?? null,
         kills: me?.stats.kills ?? null,
         deaths: me?.stats.deaths ?? null,
         assists: me?.stats.assists ?? null,
+        headshots: me?.stats.headshots ?? null,
+        bodyshots: me?.stats.bodyshots ?? null,
+        legshots: me?.stats.legshots ?? null,
+        damageDealt: me?.stats.damage.dealt ?? null,
       };
     });
 
@@ -167,6 +181,7 @@ export class HenrikDevProvider implements ValorantDataProvider {
       peakRank: mmrRes.data.peak?.tier ?? null,
       rankHistory,
       recentMatches,
+      stats: computeAggregateStats(recentMatches),
     };
   }
 }

@@ -42,10 +42,28 @@ export interface MatchSummary {
   startedAt: string;
   won: boolean | null;
   score: string | null;
+  roundsPlayed: number | null;
   agent: string | null;
   kills: number | null;
   deaths: number | null;
   assists: number | null;
+  headshots: number | null;
+  bodyshots: number | null;
+  legshots: number | null;
+  damageDealt: number | null;
+}
+
+export interface AggregateStats {
+  matchesPlayed: number;
+  wins: number;
+  winRate: number | null;
+  kd: number | null;
+  kda: number | null;
+  headshotPercent: number | null;
+  adr: number | null;
+  avgKills: number | null;
+  avgDeaths: number | null;
+  avgAssists: number | null;
 }
 
 export interface PlayerProfile {
@@ -54,6 +72,7 @@ export interface PlayerProfile {
   peakRank: RankTier | null;
   rankHistory: RankHistoryEntry[];
   recentMatches: MatchSummary[];
+  stats: AggregateStats;
 }
 
 export class ValorantApiError extends Error {
