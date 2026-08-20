@@ -2,7 +2,19 @@ import "server-only";
 import { HenrikDevProvider } from "./henrikdev";
 import type { ValorantDataProvider } from "./provider";
 
-export type { PlayerProfile, Affinity, RiotId } from "./types";
+export type {
+  Accuracy,
+  AgentStat,
+  Affinity,
+  AggregateStats,
+  MapStat,
+  MatchSummary,
+  PlayerProfile,
+  RankHistoryEntry,
+  RankTier,
+  RiotId,
+  WeaponStat,
+} from "./types";
 export { ValorantApiError } from "./types";
 
 let provider: ValorantDataProvider | null = null;

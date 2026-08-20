@@ -4,18 +4,24 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const AFFINITIES = [
-  { value: "na", label: "North America" },
-  { value: "eu", label: "Europe" },
-  { value: "ap", label: "Asia Pacific" },
-  { value: "kr", label: "Korea" },
-  { value: "latam", label: "Latin America" },
-  { value: "br", label: "Brazil" },
+  { value: "na", label: "NA" },
+  { value: "eu", label: "EU" },
+  { value: "ap", label: "AP" },
+  { value: "kr", label: "KR" },
+  { value: "latam", label: "LATAM" },
+  { value: "br", label: "BR" },
 ];
 
-export function SearchForm() {
+export function SearchForm({
+  size = "hero",
+  defaultAffinity = "na",
+}: {
+  size?: "hero" | "compact";
+  defaultAffinity?: string;
+}) {
   const router = useRouter();
   const [riotId, setRiotId] = useState("");
-  const [affinity, setAffinity] = useState("na");
+  const [affinity, setAffinity] = useState(defaultAffinity);
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -24,30 +30,40 @@ export function SearchForm() {
     const hashIndex = trimmed.lastIndexOf("#");
 
     if (hashIndex <= 0 || hashIndex === trimmed.length - 1) {
-      setError("Enter a Riot ID in the format Name#Tag");
+      setError("Enter a Riot ID as Name#Tag");
       return;
     }
 
-    const name = trimmed.slice(0, hashIndex);
-    const tag = trimmed.slice(hashIndex + 1);
     setError(null);
-    router.push(`/player/${affinity}/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`);
+    router.push(
+      `/player/${affinity}/${encodeURIComponent(trimmed.slice(0, hashIndex))}/${encodeURIComponent(
+        trimmed.slice(hashIndex + 1),
+      )}`,
+    );
   }
 
+  const compact = size === "compact";
+  const field = compact ? "h-9 text-sm" : "h-12 text-base";
+
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col gap-3">
-      <div className="flex gap-2">
+    <form
+      onSubmit={handleSubmit}
+      className={compact ? "flex items-center gap-2" : "flex w-full max-w-xl flex-col gap-2"}
+    >
+      <div className="flex items-stretch gap-2">
         <input
           type="text"
           value={riotId}
           onChange={(e) => setRiotId(e.target.value)}
           placeholder="Name#Tag"
-          className="flex-1 rounded border border-border bg-surface px-4 py-2.5 text-base text-fg placeholder:text-fg-subtle outline-none transition-colors focus:border-accent"
+          aria-label="Riot ID"
+          className={`${field} ${compact ? "w-52" : "flex-1"} rounded-sm border border-border bg-surface px-3 text-fg placeholder:text-fg-subtle outline-none transition-colors hover:border-border-hover focus:border-accent`}
         />
         <select
           value={affinity}
           onChange={(e) => setAffinity(e.target.value)}
-          className="rounded border border-border bg-surface px-3 py-2.5 text-base text-fg outline-none transition-colors focus:border-accent"
+          aria-label="Region"
+          className={`${field} rounded-sm border border-border bg-surface px-2 text-fg outline-none transition-colors hover:border-border-hover focus:border-accent`}
         >
           {AFFINITIES.map((a) => (
             <option key={a.value} value={a.value}>
@@ -55,13 +71,13 @@ export function SearchForm() {
             </option>
           ))}
         </select>
+        <button
+          type="submit"
+          className={`${field} eyebrow rounded-sm bg-accent px-5 text-[15px] text-white transition-colors hover:bg-accent-hover`}
+        >
+          Search
+        </button>
       </div>
-      <button
-        type="submit"
-        className="w-full rounded bg-accent px-4 py-2.5 text-base font-semibold uppercase tracking-wide text-white transition-colors hover:bg-accent-hover"
-      >
-        Search
-      </button>
       {error && <p className="text-sm text-negative">{error}</p>}
     </form>
   );

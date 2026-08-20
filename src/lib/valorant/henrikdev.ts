@@ -11,6 +11,9 @@ import { computeAggregateStats } from "./stats";
 
 const BASE_URL = "https://api.henrikdev.xyz";
 
+/** The matches endpoint caps out around 10 regardless of a larger `size`. */
+const MATCH_SAMPLE_SIZE = 10;
+
 interface HenrikAccountResponse {
   status: number;
   data: {
@@ -46,37 +49,49 @@ interface HenrikMmrHistoryResponse {
       date: string;
       tier: { id: number; name: string };
       rr: number;
+      elo: number;
       last_change: number;
       match_id: string;
     }>;
   };
 }
 
+interface HenrikKill {
+  round: number;
+  time_in_round_in_ms: number;
+  killer: { puuid: string };
+  weapon: { name: string } | null;
+}
+
+interface HenrikMatch {
+  metadata: {
+    match_id: string;
+    map: { name: string };
+    queue: { name: string };
+    started_at: string;
+  };
+  players: Array<{
+    puuid: string;
+    team_id: string;
+    agent: { name: string } | null;
+    stats: {
+      score: number;
+      kills: number;
+      deaths: number;
+      assists: number;
+      headshots: number;
+      bodyshots: number;
+      legshots: number;
+      damage: { dealt: number; received: number };
+    };
+  }>;
+  teams: Array<{ team_id: string; won: boolean; rounds: { won: number; lost: number } }>;
+  kills?: HenrikKill[];
+}
+
 interface HenrikMatchesResponse {
   status: number;
-  data: Array<{
-    metadata: {
-      match_id: string;
-      map: { name: string };
-      queue: { name: string };
-      started_at: string;
-    };
-    players: Array<{
-      puuid: string;
-      team_id: string;
-      agent: { name: string } | null;
-      stats: {
-        kills: number;
-        deaths: number;
-        assists: number;
-        headshots: number;
-        bodyshots: number;
-        legshots: number;
-        damage: { dealt: number; received: number };
-      };
-    }>;
-    teams: Array<{ team_id: string; won: boolean; rounds: { won: number; lost: number } }>;
-  }>;
+  data: HenrikMatch[];
 }
 
 interface HenrikErrorResponse {
@@ -103,8 +118,37 @@ async function henrikFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function encodeRiotId(part: string): string {
-  return encodeURIComponent(part);
+/**
+ * Derives per-round achievements the flat player stats don't carry: opening
+ * kills (earliest kill of a round) and aces (5+ kills in one round).
+ */
+function summarizeKills(kills: HenrikKill[] | undefined, puuid: string) {
+  const byRound = new Map<number, HenrikKill[]>();
+  const weaponKills: Record<string, number> = {};
+
+  for (const kill of kills ?? []) {
+    const bucket = byRound.get(kill.round);
+    if (bucket) bucket.push(kill);
+    else byRound.set(kill.round, [kill]);
+
+    if (kill.killer.puuid === puuid) {
+      const weapon = kill.weapon?.name ?? "Unknown";
+      weaponKills[weapon] = (weaponKills[weapon] ?? 0) + 1;
+    }
+  }
+
+  let firstBloods = 0;
+  let aces = 0;
+
+  for (const round of byRound.values()) {
+    const opener = round.reduce((earliest, kill) =>
+      kill.time_in_round_in_ms < earliest.time_in_round_in_ms ? kill : earliest,
+    );
+    if (opener.killer.puuid === puuid) firstBloods++;
+    if (round.filter((k) => k.killer.puuid === puuid).length >= 5) aces++;
+  }
+
+  return { firstBloods, aces, weaponKills };
 }
 
 export class HenrikDevProvider implements ValorantDataProvider {
@@ -112,8 +156,8 @@ export class HenrikDevProvider implements ValorantDataProvider {
     riotId: { name: string; tag: string },
     affinity: Affinity,
   ): Promise<PlayerProfile> {
-    const name = encodeRiotId(riotId.name);
-    const tag = encodeRiotId(riotId.tag);
+    const name = encodeURIComponent(riotId.name);
+    const tag = encodeURIComponent(riotId.tag);
 
     const [accountRes, mmrRes, mmrHistoryRes, matchesRes] = await Promise.all([
       henrikFetch<HenrikAccountResponse>(`/valorant/v2/account/${name}/${tag}`),
@@ -122,7 +166,7 @@ export class HenrikDevProvider implements ValorantDataProvider {
         `/valorant/v2/mmr-history/${affinity}/pc/${name}/${tag}`,
       ),
       henrikFetch<HenrikMatchesResponse>(
-        `/valorant/v4/matches/${affinity}/pc/${name}/${tag}?size=10`,
+        `/valorant/v4/matches/${affinity}/pc/${name}/${tag}?size=${MATCH_SAMPLE_SIZE}&mode=competitive`,
       ).catch(() => null),
     ]);
 
@@ -133,6 +177,7 @@ export class HenrikDevProvider implements ValorantDataProvider {
       date: entry.date,
       tier: entry.tier,
       rr: entry.rr,
+      elo: entry.elo,
       lastChange: entry.last_change,
       matchId: entry.match_id ?? null,
     }));
@@ -140,6 +185,7 @@ export class HenrikDevProvider implements ValorantDataProvider {
     const recentMatches: MatchSummary[] = (matchesRes?.data ?? []).map((match) => {
       const me = match.players.find((p) => p.puuid === puuid) ?? null;
       const myTeam = me ? match.teams.find((t) => t.team_id === me.team_id) : undefined;
+      const { firstBloods, aces, weaponKills } = summarizeKills(match.kills, puuid);
 
       return {
         matchId: match.metadata.match_id,
@@ -147,16 +193,21 @@ export class HenrikDevProvider implements ValorantDataProvider {
         mode: match.metadata.queue.name,
         startedAt: match.metadata.started_at,
         won: myTeam ? myTeam.won : null,
-        score: myTeam ? `${myTeam.rounds.won}-${myTeam.rounds.lost}` : null,
+        roundsWon: myTeam ? myTeam.rounds.won : null,
+        roundsLost: myTeam ? myTeam.rounds.lost : null,
         roundsPlayed: myTeam ? myTeam.rounds.won + myTeam.rounds.lost : null,
         agent: me?.agent?.name ?? null,
         kills: me?.stats.kills ?? null,
         deaths: me?.stats.deaths ?? null,
         assists: me?.stats.assists ?? null,
+        score: me?.stats.score ?? null,
         headshots: me?.stats.headshots ?? null,
         bodyshots: me?.stats.bodyshots ?? null,
         legshots: me?.stats.legshots ?? null,
         damageDealt: me?.stats.damage.dealt ?? null,
+        firstBloods,
+        aces,
+        weaponKills,
       };
     });
 

@@ -1,23 +1,40 @@
 @import "tailwindcss";
 
 :root {
+  /* Planes */
   --bg: #0d1114;
   --surface: #161b1e;
-  --surface-hover: #1c2226;
-  --border: #262d31;
-  --border-hover: #33393d;
+  --surface-2: #1c2225;
+  --surface-hover: #212829;
+
+  /* Hairlines */
+  --border: #242b2f;
+  --border-hover: #394246;
+
+  /* Ink */
   --fg: #ece8e1;
-  --fg-muted: #8b9296;
-  --fg-subtle: #5c6266;
+  --fg-muted: #9aa1a5;
+  --fg-subtle: #767d81;
+
+  /* Brand */
   --accent: #ff4655;
-  --accent-hover: #ff5d6a;
+  --accent-hover: #ff6472;
+
+  /* Outcome */
   --positive: #3fb98a;
   --negative: #ff5566;
+
+  /* Chart series (validated on the #161b1e surface) */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --grid: #242b2f;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-surface-hover: var(--surface-hover);
   --color-border: var(--border);
   --color-border-hover: var(--border-hover);
@@ -28,6 +45,10 @@
   --color-accent-hover: var(--accent-hover);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-grid: var(--grid);
   --font-display: var(--font-barlow-condensed);
   --font-sans: var(--font-barlow);
 }
@@ -36,4 +57,16 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
+}
+
+/* Columns of figures align; standalone display numbers stay proportional. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }

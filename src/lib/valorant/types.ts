@@ -31,6 +31,8 @@ export interface RankHistoryEntry {
   date: string;
   tier: RankTier;
   rr: number;
+  /** Continuous ladder rating; unlike `rr` it does not reset at a tier boundary. */
+  elo: number;
   lastChange: number;
   matchId: string | null;
 }
@@ -41,29 +43,77 @@ export interface MatchSummary {
   mode: string;
   startedAt: string;
   won: boolean | null;
-  score: string | null;
+  roundsWon: number | null;
+  roundsLost: number | null;
   roundsPlayed: number | null;
   agent: string | null;
   kills: number | null;
   deaths: number | null;
   assists: number | null;
+  score: number | null;
   headshots: number | null;
   bodyshots: number | null;
   legshots: number | null;
   damageDealt: number | null;
+  firstBloods: number;
+  aces: number;
+  /** Kill counts by weapon name for this player in this match. */
+  weaponKills: Record<string, number>;
+}
+
+export interface Accuracy {
+  headshots: number;
+  bodyshots: number;
+  legshots: number;
+  totalShots: number;
+  headPercent: number | null;
+  bodyPercent: number | null;
+  legPercent: number | null;
+}
+
+export interface AgentStat {
+  agent: string;
+  matches: number;
+  wins: number;
+  winRate: number | null;
+  kd: number | null;
+  adr: number | null;
+  acs: number | null;
+}
+
+export interface MapStat {
+  map: string;
+  matches: number;
+  wins: number;
+  winRate: number | null;
+}
+
+export interface WeaponStat {
+  weapon: string;
+  kills: number;
+  share: number;
 }
 
 export interface AggregateStats {
   matchesPlayed: number;
   wins: number;
+  losses: number;
   winRate: number | null;
+  roundsPlayed: number;
+  kills: number;
+  deaths: number;
+  assists: number;
   kd: number | null;
   kda: number | null;
-  headshotPercent: number | null;
+  acs: number | null;
   adr: number | null;
-  avgKills: number | null;
-  avgDeaths: number | null;
-  avgAssists: number | null;
+  killsPerRound: number | null;
+  firstBloods: number;
+  aces: number;
+  accuracy: Accuracy;
+  agents: AgentStat[];
+  maps: MapStat[];
+  weapons: WeaponStat[];
 }
 
 export interface PlayerProfile {
