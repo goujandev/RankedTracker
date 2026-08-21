@@ -1,3 +1,5 @@
+import type { PerformanceScore } from "./score";
+
 export interface RiotId {
   name: string;
   tag: string;
@@ -57,6 +59,8 @@ export interface MatchSummary {
   damageDealt: number | null;
   firstBloods: number;
   aces: number;
+  plants: number;
+  defuses: number;
   /** Kill counts by weapon name for this player in this match. */
   weaponKills: Record<string, number>;
 }
@@ -110,6 +114,8 @@ export interface AggregateStats {
   killsPerRound: number | null;
   firstBloods: number;
   aces: number;
+  plants: number;
+  defuses: number;
   accuracy: Accuracy;
   agents: AgentStat[];
   maps: MapStat[];
@@ -123,6 +129,7 @@ export interface PlayerProfile {
   rankHistory: RankHistoryEntry[];
   recentMatches: MatchSummary[];
   stats: AggregateStats;
+  performance: PerformanceScore | null;
 }
 
 export class ValorantApiError extends Error {

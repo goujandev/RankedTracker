@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Panel } from "@/components/panel";
 import { RrChart } from "@/components/charts/rr-chart";
 import { AccuracyBar } from "@/components/charts/accuracy-bar";
+import { PerformanceScorePanel } from "@/components/performance-score";
 import { getValorantProvider, ValorantApiError, type Affinity } from "@/lib/valorant";
 
 function pct(value: number | null, digits = 0): string {
@@ -46,7 +47,8 @@ export default async function PlayerPage({
     throw err;
   }
 
-  const { account, currentRank, peakRank, rankHistory, recentMatches, stats } = profile;
+  const { account, currentRank, peakRank, rankHistory, recentMatches, stats, performance } =
+    profile;
 
   const headline = [
     { label: "ACS", value: round(stats.acs), hint: "Avg combat score" },
@@ -63,6 +65,8 @@ export default async function PlayerPage({
     { label: "Deaths", value: stats.deaths.toString() },
     { label: "Assists", value: stats.assists.toString() },
     { label: "First Bloods", value: stats.firstBloods.toString() },
+    { label: "Plants", value: stats.plants.toString() },
+    { label: "Defuses", value: stats.defuses.toString() },
     { label: "Aces", value: stats.aces.toString() },
   ];
 
@@ -218,13 +222,19 @@ export default async function PlayerPage({
 
           {/* Main column */}
           <div className="flex flex-col gap-5">
+            {performance && (
+              <PerformanceScorePanel
+                performance={performance}
+                matchesPlayed={stats.matchesPlayed}
+              />
+            )}
+
             <Panel title="Overview" meta={`${stats.roundsPlayed} rounds played`} bodyClassName="">
-              <div className="grid grid-cols-2 sm:grid-cols-4">
-                {headline.map((stat, i) => (
-                  <div
-                    key={stat.label}
-                    className={`px-5 py-5 ${i > 0 ? "sm:border-l sm:border-border" : ""} ${i >= 2 ? "border-t border-border sm:border-t-0" : ""} ${i === 1 ? "border-l border-border sm:border-l" : ""} ${i === 3 ? "border-l border-border" : ""}`}
-                  >
+              {/* gap-px over a border-colored ground draws the hairlines, so the
+                  grid stays correct no matter how many stats are listed. */}
+              <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
+                {headline.map((stat) => (
+                  <div key={stat.label} className="bg-surface px-5 py-5">
                     <p className="eyebrow text-xs text-fg-subtle">{stat.label}</p>
                     <p className="mt-1 text-3xl font-semibold leading-none text-fg">
                       {stat.value}
@@ -233,15 +243,11 @@ export default async function PlayerPage({
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 border-t border-border sm:grid-cols-4">
-                {secondary.map((stat, i) => (
+              <div className="grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-5">
+                {secondary.map((stat) => (
                   <div
                     key={stat.label}
-                    className={`flex items-baseline justify-between px-5 py-3 ${
-                      i % 2 === 1 ? "border-l border-border" : ""
-                    } ${i % 4 !== 0 ? "sm:border-l sm:border-border" : "sm:border-l-0"} ${
-                      i >= 2 ? "border-t border-border" : ""
-                    } ${i >= 4 ? "sm:border-t sm:border-border" : "sm:border-t-0"}`}
+                    className="flex items-baseline justify-between gap-2 bg-surface px-5 py-3"
                   >
                     <span className="text-sm text-fg-muted">{stat.label}</span>
                     <span className="tnum text-sm font-semibold text-fg">{stat.value}</span>

@@ -15,6 +15,8 @@ export type {
   RiotId,
   WeaponStat,
 } from "./types";
+export type { PerformanceScore, PerformanceTier, ScoreComponent } from "./score";
+export { PERFORMANCE_TIERS } from "./score";
 export { ValorantApiError } from "./types";
 
 let provider: ValorantDataProvider | null = null;

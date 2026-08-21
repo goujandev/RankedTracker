@@ -126,6 +126,8 @@ export function computeAggregateStats(matches: MatchSummary[]): AggregateStats {
     killsPerRound: ratio(kills, roundsPlayed),
     firstBloods: sum(matches, (m) => m.firstBloods),
     aces: sum(matches, (m) => m.aces),
+    plants: sum(matches, (m) => m.plants),
+    defuses: sum(matches, (m) => m.defuses),
     accuracy: {
       headshots,
       bodyshots,

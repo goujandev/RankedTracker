@@ -8,6 +8,7 @@ import {
   ValorantApiError,
 } from "./types";
 import { computeAggregateStats } from "./stats";
+import { computePerformanceScore } from "./score";
 
 const BASE_URL = "https://api.henrikdev.xyz";
 
@@ -87,6 +88,10 @@ interface HenrikMatch {
   }>;
   teams: Array<{ team_id: string; won: boolean; rounds: { won: number; lost: number } }>;
   kills?: HenrikKill[];
+  rounds?: Array<{
+    plant: { player: { puuid: string } | null } | null;
+    defuse: { player: { puuid: string } | null } | null;
+  }>;
 }
 
 interface HenrikMatchesResponse {
@@ -151,6 +156,19 @@ function summarizeKills(kills: HenrikKill[] | undefined, puuid: string) {
   return { firstBloods, aces, weaponKills };
 }
 
+/** Spike plants and defuses are recorded on the round, not in the player's stat line. */
+function summarizeObjectives(rounds: HenrikMatch["rounds"], puuid: string) {
+  let plants = 0;
+  let defuses = 0;
+
+  for (const round of rounds ?? []) {
+    if (round.plant?.player?.puuid === puuid) plants++;
+    if (round.defuse?.player?.puuid === puuid) defuses++;
+  }
+
+  return { plants, defuses };
+}
+
 export class HenrikDevProvider implements ValorantDataProvider {
   async getPlayerProfile(
     riotId: { name: string; tag: string },
@@ -186,6 +204,7 @@ export class HenrikDevProvider implements ValorantDataProvider {
       const me = match.players.find((p) => p.puuid === puuid) ?? null;
       const myTeam = me ? match.teams.find((t) => t.team_id === me.team_id) : undefined;
       const { firstBloods, aces, weaponKills } = summarizeKills(match.kills, puuid);
+      const { plants, defuses } = summarizeObjectives(match.rounds, puuid);
 
       return {
         matchId: match.metadata.match_id,
@@ -207,9 +226,13 @@ export class HenrikDevProvider implements ValorantDataProvider {
         damageDealt: me?.stats.damage.dealt ?? null,
         firstBloods,
         aces,
+        plants,
+        defuses,
         weaponKills,
       };
     });
+
+    const stats = computeAggregateStats(recentMatches);
 
     return {
       account: {
@@ -232,7 +255,8 @@ export class HenrikDevProvider implements ValorantDataProvider {
       peakRank: mmrRes.data.peak?.tier ?? null,
       rankHistory,
       recentMatches,
-      stats: computeAggregateStats(recentMatches),
+      stats,
+      performance: computePerformanceScore(stats),
     };
   }
 }
